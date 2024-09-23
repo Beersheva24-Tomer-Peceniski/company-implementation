@@ -26,9 +26,6 @@ public class CompanyImpl implements Company {
 
         @Override
         public void remove() {
-            if (currentEmployee == null) {
-                throw new IllegalStateException();
-            }
             iterator.remove();
             removeEmployeesDepartment(currentEmployee);
             removeManagersFactor(currentEmployee);
@@ -82,9 +79,10 @@ public class CompanyImpl implements Company {
     private void removeManagersFactor(Employee empl) {
         if(empl instanceof Manager) {
             Manager newEmpl = (Manager) empl;
-            Float factor = ((Manager)empl).getFactor();
-            managersFactor.get(factor).remove(newEmpl);
-            if(managersFactor.get(factor).size() == 0) {
+            Float factor = newEmpl.getFactor();
+            List<Manager> list = managersFactor.get(factor);
+            list.remove(newEmpl);
+            if(list.size() == 0) {
                 managersFactor.remove(factor);
             }
         }
@@ -92,8 +90,9 @@ public class CompanyImpl implements Company {
 
     private void removeEmployeesDepartment(Employee empl) {
         String department = empl.getDepartment();
-        employeesDepartment.get(department).remove(empl);
-        if(employeesDepartment.get(department).size() == 0) {
+        List<Employee> list = employeesDepartment.get(department);
+        list.remove(empl);
+        if(list.size() == 0) {
             employeesDepartment.remove(department);
         }
     } 
@@ -101,13 +100,12 @@ public class CompanyImpl implements Company {
     @Override
     public int getDepartmentBudget(String department) {
         int result = 0;
-        for (Map.Entry<String, List<Employee>> entry : employeesDepartment.entrySet()) {
-            if (entry.getKey().equals(department)) {
-                for (Employee empl : entry.getValue()) {
+        List<Employee> list = employeesDepartment.get(department);
+            if(list != null) {
+                for (Employee empl : list) {
                     result += empl.computeSalary();
                 }
             }
-        }
         return result;
     }
 
