@@ -2,51 +2,127 @@ package telran.employees;
 
 import java.util.*;
 
-public class CompanyImpl implements Company{
-   private TreeMap<Long, Employee> employees = new TreeMap<>();
-   private HashMap<String, List<Employee>> employeesDepartment = new HashMap<>();
-   private TreeMap<Float, List<Manager>> managersFactor = new TreeMap<>();
+public class CompanyImpl implements Company {
+    private TreeMap<Long, Employee> employees = new TreeMap<>();
+    private HashMap<String, List<Employee>> employeesDepartment = new HashMap<>();
+    private TreeMap<Float, List<Manager>> managersFactor = new TreeMap<>();
+
+    private class EmployeeIterator implements Iterator<Employee> {
+        private Iterator<Employee> iterator;
+        private Employee currentEmployee;
+
+        public EmployeeIterator(Iterator<Employee> iterator) {
+            this.iterator = iterator;
+        }
+
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
+
+        public Employee next() {
+            currentEmployee = iterator.next();
+            return currentEmployee;
+        }
+
+        @Override
+        public void remove() {
+            if (currentEmployee == null) {
+                throw new IllegalStateException();
+            }
+            iterator.remove();
+            removeEmployeesDepartment(currentEmployee);
+            removeManagersFactor(currentEmployee);
+        }
+    }
 
     @Override
     public Iterator<Employee> iterator() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'iterator'");
+        return new EmployeeIterator(employees.values().iterator());
     }
 
     @Override
     public void addEmployee(Employee empl) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'addEmployee'");
+        long testId = empl.getId();
+        if(employees.get(testId) != null) {
+            throw new IllegalStateException();
+        }
+        employees.put(testId, empl);
+        addEmployeesDepartment(empl);
+        addManagersFactor(empl);
+    }
+
+    private void addEmployeesDepartment(Employee empl) {
+        String department = empl.getDepartment();
+        employeesDepartment.computeIfAbsent(department, k -> new ArrayList<Employee>()).add(empl);
+    }
+
+    private void addManagersFactor(Employee empl) {
+        if(empl instanceof Manager) {
+            Manager newEmpl = (Manager) empl;
+            managersFactor.computeIfAbsent(newEmpl.getFactor(), k -> new ArrayList<Manager>()).add(newEmpl);
+        }
     }
 
     @Override
     public Employee getEmployee(long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getEmployee'");
+        return employees.get(id);
     }
 
     @Override
     public Employee removeEmployee(long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'removeEmployee'");
+        Employee empl = employees.get(id);
+        if(empl == null) {
+            throw new NoSuchElementException();
+        }
+        removeEmployeesDepartment(empl);
+        removeManagersFactor(empl);
+        return employees.remove(id);
     }
+
+    private void removeManagersFactor(Employee empl) {
+        if(empl instanceof Manager) {
+            Manager newEmpl = (Manager) empl;
+            Float factor = ((Manager)empl).getFactor();
+            managersFactor.get(factor).remove(newEmpl);
+            if(managersFactor.get(factor).size() == 0) {
+                managersFactor.remove(factor);
+            }
+        }
+    }
+
+    private void removeEmployeesDepartment(Employee empl) {
+        String department = empl.getDepartment();
+        employeesDepartment.get(department).remove(empl);
+        if(employeesDepartment.get(department).size() == 0) {
+            employeesDepartment.remove(department);
+        }
+    } 
 
     @Override
     public int getDepartmentBudget(String department) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDepartmentBudget'");
+        int result = 0;
+        for (Map.Entry<String, List<Employee>> entry : employeesDepartment.entrySet()) {
+            if (entry.getKey().equals(department)) {
+                for (Employee empl : entry.getValue()) {
+                    result += empl.computeSalary();
+                }
+            }
+        }
+        return result;
     }
 
     @Override
     public String[] getDepartments() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDepartments'");
+        String[] result = employeesDepartment.keySet().toArray(new String[0]);
+        Arrays.sort(result);
+        return result; 
     }
 
     @Override
     public Manager[] getManagersWithMostFactor() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getManagersWithMostFactor'");
+        Map.Entry<Float, List<Manager>> lastEntry = managersFactor.lastEntry();
+        Manager[] result = lastEntry != null ? lastEntry.getValue().toArray(new Manager[0]) : new Manager[0];
+        return result;
     }
 
 }
